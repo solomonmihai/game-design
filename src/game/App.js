@@ -1,7 +1,11 @@
 import { Application } from "pixi.js";
 
+import { addInputListeners } from "./Input";
 import Scene from "./Scene";
 
+/**
+ * @type Application
+ */
 let app;
 
 /**
@@ -13,8 +17,11 @@ async function initApp(canvas) {
 
   await app.init({
     background: "0xCCA2FF",
-    view: canvas,
+    canvas,
+    antialias: false,
   });
+
+  addInputListeners();
 
   app.stage.addChild(new Scene());
 }

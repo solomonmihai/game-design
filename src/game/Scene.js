@@ -1,25 +1,52 @@
-import { Container, Graphics } from "pixi.js";
-import gsap from "gsap";
+import { Container, Point } from "pixi.js";
+
+import { app } from "./App";
+import { rand } from "./utils";
+
+import Block from "./entities/Block";
+import Player from "./entities/Player";
 
 export default class Scene extends Container {
   constructor() {
     super();
 
-    const graphics = new Graphics();
+    this._player = new Player();
+    this.addChild(this._player);
 
-    // Rectangle
-    graphics.rect(0, 0, 100, 100);
-    graphics.fill(0xde3249);
+    this._blocks = new Container();
+    this._blocks.addChild(...this._genTestBlocks(1));
+    this.addChild(this._blocks);
 
-    graphics.pivot.set(50, 50);
-    graphics.position.set(100, 100);
+    this._addTicker();
+  }
 
-    this.addChild(graphics);
+  /**
+   * @param {number} count
+   * @returns {Container[]}
+   */
+  _genTestBlocks(count) {
+    const blocks = [];
 
-    gsap.to(graphics, {
-      rotation: 10 * Math.PI,
-      duration: 2,
-      repeat: -1
+    const minSize = 40;
+    const maxSize = 250;
+
+    for (let i = 0; i < count; i++) {
+      const size = new Point(rand(minSize, maxSize), rand(minSize, maxSize));
+      const pos = new Point(
+        rand(0, app.canvas.width - size.x),
+        rand(0, app.canvas.height - size.y)
+      );
+
+      blocks.push(new Block(pos, size));
+    }
+
+    return blocks;
+  }
+
+  _addTicker() {
+    app.ticker.add(({ deltaTime }) => {
+      this._player.move(deltaTime);
+      this._player.checkCollisions(this._blocks);
     });
   }
 }
