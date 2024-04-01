@@ -1,4 +1,5 @@
-import { Application } from "pixi.js";
+import { Application, Graphics } from "pixi.js";
+import { CRTFilter } from "pixi-filters";
 
 import { addInputListeners } from "./Input";
 import Scene from "./Scene";
@@ -23,7 +24,20 @@ async function initApp(canvas) {
 
   addInputListeners();
 
-  app.stage.addChild(new Scene());
+  const filter = new CRTFilter({
+    vignetting: 0.5,
+  });
+
+  const scene = new Scene();
+
+  const bgGraphics = new Graphics();
+  bgGraphics.rect(0, 0, app.canvas.width, app.canvas.height);
+  bgGraphics.fill(0xcca2ff);
+
+  app.stage.filters = filter;
+
+  app.stage.addChild(bgGraphics);
+  app.stage.addChild(scene);
 }
 
 export { app, initApp };

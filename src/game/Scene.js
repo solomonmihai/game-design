@@ -1,10 +1,11 @@
 import { Container, Point } from "pixi.js";
 
 import { app } from "./App";
-import { rand } from "./utils";
+import { lerp, rand } from "./utils";
 
 import Block from "./entities/Block";
 import Player from "./entities/Player";
+import Agent from "./entities/Agent";
 
 export default class Scene extends Container {
   constructor() {
@@ -14,10 +15,22 @@ export default class Scene extends Container {
     this.addChild(this._player);
 
     this._blocks = new Container();
-    this._blocks.addChild(...this._genTestBlocks(1));
+    this._blocks.addChild(...this._genTestBlocks(3));
     this.addChild(this._blocks);
 
     this._addTicker();
+
+    this.addChild(this._createTestAgent());
+  }
+
+  _createTestAgent() {
+    const points = [
+      new Point(100, 100),
+      new Point(500, 100),
+      new Point(300, 300),
+    ];
+
+    return new Agent(points);
   }
 
   /**
@@ -33,8 +46,8 @@ export default class Scene extends Container {
     for (let i = 0; i < count; i++) {
       const size = new Point(rand(minSize, maxSize), rand(minSize, maxSize));
       const pos = new Point(
-        rand(0, app.canvas.width - size.x),
-        rand(0, app.canvas.height - size.y)
+        rand(-app.canvas.width, app.canvas.width),
+        rand(-app.canvas.height, app.canvas.height)
       );
 
       blocks.push(new Block(pos, size));
@@ -45,8 +58,12 @@ export default class Scene extends Container {
 
   _addTicker() {
     app.ticker.add(({ deltaTime }) => {
-      this._player.move(deltaTime);
-      this._player.checkCollisions(this._blocks);
+      this._player.move(deltaTime, this._blocks);
+
+      const { x: playerX, y: playerY } = this._player.position;
+
+      this.pivot.x = lerp(this.pivot.x, playerX - app.canvas.width / 2, 0.05);
+      this.pivot.y = lerp(this.pivot.y, playerY - app.canvas.height / 2, 0.05);
     });
   }
 }

@@ -1,4 +1,4 @@
-import { Point, Container } from "pixi.js";
+import { Point, Bounds } from "pixi.js";
 
 /**
  * @param {Point} point
@@ -45,14 +45,11 @@ export function dist(p1, p2) {
 }
 
 /**
- * @param {Container} object1
- * @param {Container} object2
+ * @param {Bounds} object1
+ * @param {Bounds} object2
  * @returns {boolean}
  */
-export function testCollision(object1, object2) {
-  const bounds1 = object1.getBounds();
-  const bounds2 = object2.getBounds();
-
+export function aabbCollision(bounds1, bounds2) {
   return (
     bounds1.x < bounds2.x + bounds2.width &&
     bounds1.x + bounds1.width > bounds2.x &&
@@ -62,16 +59,12 @@ export function testCollision(object1, object2) {
 }
 
 /**
- * @param {Container} object1
- * @param {Container} object2
- * @returns {Point}
+ *
+ * @param {number} start
+ * @param {number} end
+ * @param {number} amt
+ * @returns number
  */
-export function collisionResponse(object1, object2) {
-  const vCollision = new Point(object2.x - object1.x, object2.y - object1.y);
-
-  const distance = dist(object1.position, object2.position);
-
-  const vCollisionNorm = new Point(vCollision.x / distance, vCollision.y / distance);
-
-  return vCollisionNorm;
+export function lerp(start, end, amt) {
+  return (1 - amt) * start + amt * end;
 }

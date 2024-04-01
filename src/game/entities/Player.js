@@ -1,8 +1,9 @@
-import { Container, Graphics, Point } from "pixi.js";
+import { Bounds, Container, Graphics, Point } from "pixi.js";
+import gsap from "gsap";
 
 import { app } from "../App";
 import { isKeyDown } from "../Input";
-import { collisionResponse, normalizePoint, testCollision } from "../utils";
+import { normalizePoint, aabbCollision } from "../utils";
 
 export default class Player extends Container {
   constructor() {
@@ -11,32 +12,23 @@ export default class Player extends Container {
     this.addChild(this._createGraphics());
 
     this.position.set(app.canvas.width / 2, app.canvas.height / 2);
-    this.pivot.set(this.width / 2, this.height / 2);
+    this.pivot.set(0.5, 0.5);
 
     this._speed = 5;
-  }
 
-  /**
-   * @param {Container} blocks
-   */
-  checkCollisions(blocks) {
-    for (let i = 0; i < blocks.children.length; i++) {
-      const block = blocks.children[i];
-
-      if (!testCollision(this, block)) {
-        continue;
-      }
-
-      const collision = collisionResponse(this, block);
-
-      console.log(collision);
-    }
+    gsap.from(this.scale, {
+      x: 10,
+      y: 10,
+      duration: 0.8,
+      ease: "bounce.out",
+    });
   }
 
   /**
    * @param {Number} dt
+   * @param {Container} blocks
    */
-  move(dt) {
+  move(dt, blocks) {
     const dir = new Point();
 
     dir.x -= Number(isKeyDown("a"));
@@ -46,8 +38,39 @@ export default class Player extends Container {
 
     const normalizedDir = normalizePoint(dir);
 
-    this.position.x += this._speed * dt * normalizedDir.x;
-    this.position.y += this._speed * dt * normalizedDir.y;
+    const displacement = new Point(this._speed * dt * normalizedDir.x, this._speed * dt * normalizedDir.y);
+
+    if (this._checkCollisions(blocks, displacement)) {
+      return;
+    }
+
+    this.position.x += displacement.x;
+    this.position.y += displacement.y;
+  }
+
+  /**
+   * @param {Container} blocks
+   * @param {Point} displacement
+   * @returns {boolean}
+   */
+  _checkCollisions(blocks, displacement) {
+    // TODO: convert this so it returns the new appropriate position instead of not moving at all
+
+    const bounds = this.getBounds();
+    const newBounds = new Bounds(
+      bounds.minX + displacement.x,
+      bounds.minY + displacement.y,
+      bounds.maxX + displacement.x,
+      bounds.maxY + displacement.y
+    );
+
+    for (const block of blocks.children) {
+      if (aabbCollision(newBounds, block.getBounds())) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -59,7 +82,7 @@ export default class Player extends Container {
       height: 10,
     });
     graphics.circle(0, 0, 10);
-    graphics.fill(0xde3249);
+    graphics.fill(0xffffff);
     return graphics;
   }
 }
