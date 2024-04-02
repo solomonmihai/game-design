@@ -34,7 +34,7 @@ async function initApp(canvas) {
   bgGraphics.rect(0, 0, app.canvas.width, app.canvas.height);
   bgGraphics.fill(0xcca2ff);
 
-  app.stage.filters = filter;
+  // app.stage.filters = filter;
 
   app.stage.addChild(bgGraphics);
   app.stage.addChild(scene);

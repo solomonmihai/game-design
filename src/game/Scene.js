@@ -14,13 +14,14 @@ export default class Scene extends Container {
     this._player = new Player();
     this.addChild(this._player);
 
+    this._agent = this._createTestAgent();
+    this.addChild(this._agent);
+
     this._blocks = new Container();
     this._blocks.addChild(...this._genTestBlocks(3));
     this.addChild(this._blocks);
 
     this._addTicker();
-
-    this.addChild(this._createTestAgent());
   }
 
   _createTestAgent() {
@@ -59,6 +60,7 @@ export default class Scene extends Container {
   _addTicker() {
     app.ticker.add(({ deltaTime }) => {
       this._player.move(deltaTime, this._blocks);
+      this._agent.move(deltaTime, this._player);
 
       const { x: playerX, y: playerY } = this._player.position;
 

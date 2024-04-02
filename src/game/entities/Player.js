@@ -38,30 +38,30 @@ export default class Player extends Container {
 
     const normalizedDir = normalizePoint(dir);
 
-    const displacement = new Point(this._speed * dt * normalizedDir.x, this._speed * dt * normalizedDir.y);
+    const velocity = new Point(this._speed * dt * normalizedDir.x, this._speed * dt * normalizedDir.y);
 
-    if (this._checkCollisions(blocks, displacement)) {
+    if (this._checkCollisions(blocks, velocity)) {
       return;
     }
 
-    this.position.x += displacement.x;
-    this.position.y += displacement.y;
+    this.position.x += velocity.x;
+    this.position.y += velocity.y;
   }
 
   /**
    * @param {Container} blocks
-   * @param {Point} displacement
+   * @param {Point} velocity
    * @returns {boolean}
    */
-  _checkCollisions(blocks, displacement) {
+  _checkCollisions(blocks, velocity) {
     // TODO: convert this so it returns the new appropriate position instead of not moving at all
 
     const bounds = this.getBounds();
     const newBounds = new Bounds(
-      bounds.minX + displacement.x,
-      bounds.minY + displacement.y,
-      bounds.maxX + displacement.x,
-      bounds.maxY + displacement.y
+      bounds.minX + velocity.x,
+      bounds.minY + velocity.y,
+      bounds.maxX + velocity.x,
+      bounds.maxY + velocity.y
     );
 
     for (const block of blocks.children) {

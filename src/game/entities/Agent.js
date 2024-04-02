@@ -1,5 +1,12 @@
 import { Container, Graphics, Point } from "pixi.js";
 import gsap from "gsap";
+import { dist, normalizePoint } from "../utils";
+import Player from "./Player";
+
+const STATES = {
+  PATROL: "patrol",
+  CHASE: "chase",
+};
 
 export default class Agent extends Container {
   /**
@@ -9,44 +16,98 @@ export default class Agent extends Container {
     super();
 
     this._path = path;
+
+    this._viewAreaRadius = 100;
+    this._viewAreaAngle = Math.PI / 3;
+    this._speed = 2.5;
+
     this._currentPointIndex = 0;
+
+    this._state = STATES.PATROL;
 
     this.addChild(this._createGraphics());
 
     const firstPoint = this._path[this._currentPointIndex];
     this.position.set(firstPoint.x, firstPoint.y);
     this.pivot.set(0.5, 0.5);
-
-    this._addMovementTween();
   }
 
-  _addMovementTween() {
+  /**
+   * @param {Number} dt
+   * @param {Player} player
+   */
+  move(dt, player) {
+    const distToPlayer = dist(this.position, player.position);
+
+    if (distToPlayer < this._viewAreaRadius) {
+      this._state = STATES.CHASE;
+    }
+
+    if (this._state === STATES.PATROL) {
+      this._patrol(dt);
+    } else {
+      this._chase(dt, player);
+    }
+  }
+
+  /**
+   * @param {number} dt
+   */
+  _patrol(dt) {
     const nextIndex = this._getNextPointIndex();
-    const { x, y } = this._path[nextIndex];
+    const nextPoint = this._path[nextIndex];
 
-    const angle = Math.atan2(y - this.position.y, x - this.position.x);
-    const rotation = angle;
+    const dir = this._calcDir(nextPoint);
+    const velocity = new Point(this._speed * dt * dir.x, this._speed * dt * dir.y);
+    this.position.x += velocity.x;
+    this.position.y += velocity.y;
 
-    gsap.to(this, {
-      rotation,
-      duration: 0.3,
-    });
+    if (dist(this.position, nextPoint) < 5) {
+      this._currentPointIndex = nextIndex;
 
-    gsap.to(this._position, {
-      x,
-      y,
-      duration: 3,
-      ease: "linear",
-      onComplete: () => {
-        this._currentPointIndex = nextIndex;
-        this._addMovementTween();
-      },
-    });
+      const target = this._path[this._getNextPointIndex()];
+      this._rotateToTarget(target);
+    }
   }
 
   _getNextPointIndex() {
     const next = this._currentPointIndex + 1;
     return next >= this._path.length ? 0 : next;
+  }
+
+  /**
+   * @param {number} dt
+   * @param {Player} player
+   */
+  _chase(dt, player) {
+    const dir = this._calcDir(player.position);
+    const velocity = new Point(this._speed * dt * dir.x, this._speed * dt * dir.y);
+    this.position.x += velocity.x;
+    this.position.y += velocity.y;
+
+    this._rotateToTarget(player.position);
+  }
+
+  /**
+   * @param {Point} target
+   */
+  _calcDir({ x, y }) {
+    const dir = new Point(x - this.position.x, y - this.position.y);
+    return normalizePoint(dir);
+  }
+
+  /**
+   * @param {Point} target
+   */
+  _rotateToTarget({ x, y }) {
+    const angle = Math.atan2(y - this.position.y, x - this.position.x);
+    const rotation = angle;
+
+    // TODO: rotate in the correct direction
+    gsap.to(this, {
+      rotation,
+      duration: 0.3,
+    });
   }
 
   /**
@@ -61,7 +122,7 @@ export default class Agent extends Container {
     graphics.circle(0, 0, 10);
     graphics.fill(0xde3249);
 
-    graphics.arc(0, 0, 100, -Math.PI / 6, Math.PI / 6);
+    graphics.arc(0, 0, this._viewAreaRadius, -this._viewAreaAngle / 2, this._viewAreaAngle / 2);
     graphics.fill(0x222222);
 
     return graphics;
