@@ -1,7 +1,7 @@
-import { Container, Point } from "pixi.js";
+import { Container, Graphics, Point } from "pixi.js";
 
 import { app } from "./App";
-import { lerp, rand } from "./utils";
+import { convertBlocksToGrid, lerp, rand } from "./utils";
 
 import Block from "./entities/Block";
 import Player from "./entities/Player";
@@ -18,10 +18,16 @@ export default class Scene extends Container {
     this.addChild(this._agent);
 
     this._blocks = new Container();
-    this._blocks.addChild(...this._genTestBlocks(3));
+    this._blocks.addChild(...this._genTestBlocks(10));
     this.addChild(this._blocks);
 
     this._addTicker();
+
+    const debugGraphics = new Graphics();
+    this.addChild(debugGraphics);
+
+    const grid = convertBlocksToGrid(this._blocks, debugGraphics);
+    console.log('grid', grid);
   }
 
   _createTestAgent() {
