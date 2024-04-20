@@ -1,4 +1,4 @@
-import { Point, Bounds, Container, Graphics } from "pixi.js";
+import { Point, Bounds } from "pixi.js";
 
 /**
  * @param {Point} point
@@ -67,53 +67,4 @@ export function aabbCollision(bounds1, bounds2) {
  */
 export function lerp(start, end, amt) {
   return (1 - amt) * start + amt * end;
-}
-
-/**
- *
- * @param {Container} blocks
- * @param {Graphics} graphics
- */
-export function convertBlocksToGrid(blocks, graphics) {
-  // TODO
-  const grid = [];
-
-  const bounds = blocks.getBounds();
-
-  console.log(bounds);
-  console.log(blocks.children);
-
-  // draw scene bounds
-  graphics.setStrokeStyle(0x000000);
-  graphics.lineStyle(3, 0xffffff, 1);
-  graphics.rect(bounds.minX, bounds.minY, bounds.width, bounds.height);
-  graphics.stroke();
-
-  const cellSize = 40; // min block dimension
-
-  for (let i = 0; i < bounds.width; i += cellSize) {
-    const row = [];
-    for (let j = 0; j < bounds.height; j += cellSize) {
-      const x = bounds.minX + i;
-      const y = bounds.minY + j;
-
-      graphics.rect(x, y, cellSize, cellSize);
-
-      const rect = new Bounds(x, y, x + cellSize, y + cellSize);
-
-      let found = false;
-      for (const block of blocks.children) {
-        if (aabbCollision(block.getBounds(), rect)) {
-          found = true;
-          break;
-        }
-      }
-      row.push(found ? 1 : 0);
-    }
-    grid.push(row);
-  }
-
-  graphics.stroke();
-
-  return grid;
 }

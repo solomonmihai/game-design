@@ -1,7 +1,7 @@
 <script>
   import Game from "./Game.svelte";
 
-  let started = false;
+  let started = true;
 </script>
 
 <main>

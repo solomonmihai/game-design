@@ -1,11 +1,14 @@
-import { Container, Graphics, Point } from "pixi.js";
+import { Container, Graphics, Point, Rectangle } from "pixi.js";
 
 import { app } from "./App";
-import { convertBlocksToGrid, lerp, rand } from "./utils";
+import { lerp, rand } from "./utils";
+import { convertBlocksToGrid, gridToWorld, Pathfinding, worldToGrid } from "./pathfinding";
 
 import Block from "./entities/Block";
 import Player from "./entities/Player";
 import Agent from "./entities/Agent";
+
+export const CELL_SIZE = 40;
 
 export default class Scene extends Container {
   constructor() {
@@ -18,24 +21,30 @@ export default class Scene extends Container {
     this.addChild(this._agent);
 
     this._blocks = new Container();
-    this._blocks.addChild(...this._genTestBlocks(10));
+    this._blocks.addChild(...this._genTestBlocks(20));
     this.addChild(this._blocks);
 
+    this._debugGraphics = new Graphics();
+    this.addChild(this._debugGraphics);
+
+    this._pathfinding = new Pathfinding(this._blocks, CELL_SIZE, this._debugGraphics);
+
+    const grid = this._pathfinding.grid;
+    const playerPos = this._pathfinding.worldPos({ x: grid.length - 1, y: grid[0].length - 1 });
+    const agentPos = this._pathfinding.worldPos({ x: 0, y: 0 });
+
+    this._player.position.set(playerPos.x, playerPos.y);
+    this._agent.position.set(agentPos.x, agentPos.y);
+
+    setInterval(() => {
+      this._agent.move(0, this._player, this._pathfinding);
+    }, 500);
+
     this._addTicker();
-
-    const debugGraphics = new Graphics();
-    this.addChild(debugGraphics);
-
-    const grid = convertBlocksToGrid(this._blocks, debugGraphics);
-    console.log('grid', grid);
   }
 
   _createTestAgent() {
-    const points = [
-      new Point(100, 100),
-      new Point(500, 100),
-      new Point(300, 300),
-    ];
+    const points = [new Point(100, 100), new Point(500, 100), new Point(300, 300)];
 
     return new Agent(points);
   }
@@ -47,15 +56,14 @@ export default class Scene extends Container {
   _genTestBlocks(count) {
     const blocks = [];
 
-    const minSize = 40;
+    const minSize = CELL_SIZE;
     const maxSize = 250;
+
+    const { width, height } = app.canvas;
 
     for (let i = 0; i < count; i++) {
       const size = new Point(rand(minSize, maxSize), rand(minSize, maxSize));
-      const pos = new Point(
-        rand(-app.canvas.width, app.canvas.width),
-        rand(-app.canvas.height, app.canvas.height)
-      );
+      const pos = new Point(rand(-width * 2, width * 2), rand(-height * 2, height * 2));
 
       blocks.push(new Block(pos, size));
     }
@@ -66,7 +74,6 @@ export default class Scene extends Container {
   _addTicker() {
     app.ticker.add(({ deltaTime }) => {
       this._player.move(deltaTime, this._blocks);
-      this._agent.move(deltaTime, this._player);
 
       const { x: playerX, y: playerY } = this._player.position;
 

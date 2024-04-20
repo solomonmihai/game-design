@@ -1,7 +1,9 @@
 import { Container, Graphics, Point } from "pixi.js";
 import gsap from "gsap";
+
 import { dist, normalizePoint } from "../utils";
 import Player from "./Player";
+import { gridToWorld, Pathfinding, worldToGrid } from "../pathfinding";
 
 const STATES = {
   PATROL: "patrol",
@@ -15,6 +17,7 @@ export default class Agent extends Container {
   constructor(path) {
     super();
 
+    this.position.set(100, 100);
     this._path = path;
 
     this._viewAreaRadius = 100;
@@ -35,19 +38,20 @@ export default class Agent extends Container {
   /**
    * @param {Number} dt
    * @param {Player} player
+   * @param {Pathfinding} pathfinding
    */
-  move(dt, player) {
-    const distToPlayer = dist(this.position, player.position);
+  async move(dt, player, pathfinding) {
+    const path = await pathfinding.findPath(this.position, player.position);
 
-    if (distToPlayer < this._viewAreaRadius) {
-      this._state = STATES.CHASE;
+    if (!path[1]) {
+      return;
     }
 
-    if (this._state === STATES.PATROL) {
-      this._patrol(dt);
-    } else {
-      this._chase(dt, player);
-    }
+    await gsap.to(this.position, {
+      x: path[1].x,
+      y: path[1].y,
+      duration: 0.1,
+    });
   }
 
   /**
