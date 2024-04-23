@@ -28,7 +28,8 @@ export default class Agent extends Container {
 
     this._state = STATES.PATROL;
 
-    this.addChild(this._createGraphics());
+    this._graphics = this._createGraphics();
+    this.addChild(this._graphics);
 
     const firstPoint = this._path[this._currentPointIndex];
     this.position.set(firstPoint.x, firstPoint.y);
@@ -41,38 +42,52 @@ export default class Agent extends Container {
    * @param {Pathfinding} pathfinding
    */
   async move(dt, player, pathfinding) {
-    const path = await pathfinding.findPath(this.position, player.position);
+    const distanceToPlayer = dist(this.position, player.position);
+    
+    if (distanceToPlayer <= this._viewAreaRadius) {
+      console.log("chase");
+      this._state = STATES.CHASE;
+      await this._chase(dt, player);
 
-    if (!path[1]) {
-      return;
+    } else {
+      console.log("patrol");
+      this._state = STATES.PATROL;
+      await this._patrol(dt, pathfinding);
     }
+    // const path = await pathfinding.findPath(this.position, player.position);
 
-    await gsap.to(this.position, {
-      x: path[1].x,
-      y: path[1].y,
-      duration: 0.1,
-    });
+    // if (!path[1]) {
+    //   return;
+    // }
+
+    // this._rotateToTarget(path[1]);
+    // await gsap.to(this.position, {
+    //   x: path[1].x,
+    //   y: path[1].y,
+    //   duration: 0.3,
+    // });
+
   }
 
   /**
    * @param {number} dt
+   * @param {Pathfinding} pathfinding
    */
-  _patrol(dt) {
+  async _patrol(dt, pathfinding) {
     const nextIndex = this._getNextPointIndex();
     const nextPoint = this._path[nextIndex];
 
-    const dir = this._calcDir(nextPoint);
-    const velocity = new Point(this._speed * dt * dir.x, this._speed * dt * dir.y);
-    this.position.x += velocity.x;
-    this.position.y += velocity.y;
+    const path = await pathfinding.findPath(this.position, nextPoint);
 
-    if (dist(this.position, nextPoint) < 5) {
-      this._currentPointIndex = nextIndex;
-
-      const target = this._path[this._getNextPointIndex()];
-      this._rotateToTarget(target);
+    if (path && path.length > 1) {
+        this._moveToTarget(path[1]);
+        this._rotateToTarget(path[1]);
+        // if (dist(this.position, nextPoint) < 5) {
+        //     this._currentPointIndex = nextIndex;
+        //     this._rotateToTarget(nextPoint);
+        // }
     }
-  }
+}
 
   _getNextPointIndex() {
     const next = this._currentPointIndex + 1;
@@ -88,7 +103,9 @@ export default class Agent extends Container {
     const velocity = new Point(this._speed * dt * dir.x, this._speed * dt * dir.y);
     this.position.x += velocity.x;
     this.position.y += velocity.y;
-
+    
+    console.log(" chase rotation")
+    this._moveToTarget(player.position);
     this._rotateToTarget(player.position);
   }
 
@@ -103,15 +120,29 @@ export default class Agent extends Container {
   /**
    * @param {Point} target
    */
+  _moveToTarget(target) {    
+    gsap.to(this.position, {
+        x: target.x,
+        y: target.y,
+        duration: 0.5,
+        ease: "linear",
+    });
+  }
+
+  /**
+   * @param {Point} target
+   */
   _rotateToTarget({ x, y }) {
     const angle = Math.atan2(y - this.position.y, x - this.position.x);
     const rotation = angle;
-
+    
     // TODO: rotate in the correct direction
     gsap.to(this, {
-      rotation,
-      duration: 0.3,
+      rotation: rotation,
+      duration: 0.1,
+      ease: "power1.out"
     });
+    console.log("rotatie");
   }
 
   /**

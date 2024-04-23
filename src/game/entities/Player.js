@@ -6,12 +6,13 @@ import { isKeyDown } from "../Input";
 import { normalizePoint, aabbCollision } from "../utils";
 
 export default class Player extends Container {
-  constructor() {
+  constructor(spawnPoint) {
     super();
 
-    this.addChild(this._createGraphics());
+    this._playerGraphics = this._createGraphics();
+    this.addChild(this._playerGraphics);
 
-    this.position.set(app.canvas.width / 2, app.canvas.height / 2);
+    this.position.set(spawnPoint.x, spawnPoint.y);
     this.pivot.set(0.5, 0.5);
 
     this._speed = 5;
@@ -27,8 +28,9 @@ export default class Player extends Container {
   /**
    * @param {Number} dt
    * @param {Container} blocks
+   * @param {Container} target
    */
-  move(dt, blocks) {
+  move(dt, blocks, target) {
     const dir = new Point();
 
     dir.x -= Number(isKeyDown("a"));
@@ -42,6 +44,13 @@ export default class Player extends Container {
 
     if (this._checkCollisions(blocks, velocity)) {
       return;
+    }
+
+    if (this._checkCollisionWithTarget(target, velocity)){
+      this._playerGraphics.clear();
+      this._playerGraphics.circle(0, 0, 10);
+      this._playerGraphics.fill(0x00ffff);
+      this.parent.removeChild(target);
     }
 
     this.position.x += velocity.x;
@@ -71,6 +80,30 @@ export default class Player extends Container {
     }
 
     return false;
+  }
+
+  /**
+   * @param {Container} target
+   * @param {Point} velocity
+   * @returns {boolean}
+   */
+  _checkCollisionWithTarget(target, velocity) {
+
+    const bounds = this.getBounds();
+    const newBounds = new Bounds(
+      bounds.minX + velocity.x,
+      bounds.minY + velocity.y,
+      bounds.maxX + velocity.x,
+      bounds.maxY + velocity.y
+    );
+
+    const targetBounds = target.getBounds();
+
+    if( aabbCollision(newBounds, targetBounds)) {
+      return true;
+    }
+
+    return false
   }
 
   /**
