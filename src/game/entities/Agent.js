@@ -3,7 +3,7 @@ import gsap from "gsap";
 
 import { dist, normalizePoint } from "../utils";
 import Player from "./Player";
-import { gridToWorld, Pathfinding, worldToGrid } from "../pathfinding";
+import Pathfinding, { gridToWorld } from "../pathfinding";
 
 const STATES = {
   PATROL: "patrol",
@@ -28,7 +28,8 @@ export default class Agent extends Container {
 
     this._state = STATES.PATROL;
 
-    this.addChild(this._createGraphics());
+    this._graphics = this._createGraphics();
+    this.addChild(this._graphics);
 
     const firstPoint = this._path[this._currentPointIndex];
     this.position.set(firstPoint.x, firstPoint.y);
@@ -41,37 +42,40 @@ export default class Agent extends Container {
    * @param {Pathfinding} pathfinding
    */
   async move(dt, player, pathfinding) {
-    const path = await pathfinding.findPath(this.position, player.position);
+    const distanceToPlayer = dist(this.position, player.position);
 
-    if (!path[1]) {
-      return;
+    if (distanceToPlayer <= this._viewAreaRadius) {
+      this._state = STATES.CHASE;
     }
 
-    await gsap.to(this.position, {
-      x: path[1].x,
-      y: path[1].y,
-      duration: 0.1,
-    });
+    switch (this._state) {
+      case STATES.PATROL: {
+        await this._patrol(dt, pathfinding);
+        break;
+      }
+      case STATES.CHASE: {
+        this._chase(dt, player, pathfinding);
+        break;
+      }
+    }
   }
 
   /**
    * @param {number} dt
+   * @param {Pathfinding} pathfinding
    */
-  _patrol(dt) {
+  async _patrol(dt, pathfinding) {
     const nextIndex = this._getNextPointIndex();
     const nextPoint = this._path[nextIndex];
 
-    const dir = this._calcDir(nextPoint);
-    const velocity = new Point(this._speed * dt * dir.x, this._speed * dt * dir.y);
-    this.position.x += velocity.x;
-    this.position.y += velocity.y;
+    const [_, target] = await pathfinding.findPath(this.position, pathfinding.worldPos(nextPoint));
 
-    if (dist(this.position, nextPoint) < 5) {
-      this._currentPointIndex = nextIndex;
-
-      const target = this._path[this._getNextPointIndex()];
-      this._rotateToTarget(target);
+    if (!target) {
+      return;
     }
+
+    this._moveToTarget(target);
+    this._rotateToTarget(target);
   }
 
   _getNextPointIndex() {
@@ -82,14 +86,13 @@ export default class Agent extends Container {
   /**
    * @param {number} dt
    * @param {Player} player
+   * @param {Pathfinding} pathfinding
    */
-  _chase(dt, player) {
-    const dir = this._calcDir(player.position);
-    const velocity = new Point(this._speed * dt * dir.x, this._speed * dt * dir.y);
-    this.position.x += velocity.x;
-    this.position.y += velocity.y;
+  async _chase(dt, player, pathfinding) {
+    const [_, target] = await pathfinding.findPath(this.position, player.position);
 
-    this._rotateToTarget(player.position);
+    this._moveToTarget(target);
+    this._rotateToTarget(target);
   }
 
   /**
@@ -103,14 +106,27 @@ export default class Agent extends Container {
   /**
    * @param {Point} target
    */
+  _moveToTarget(target) {
+    gsap.to(this.position, {
+      x: target.x,
+      y: target.y,
+      duration: 0.5,
+      ease: "linear",
+    });
+  }
+
+  /**
+   * @param {Point} target
+   */
   _rotateToTarget({ x, y }) {
     const angle = Math.atan2(y - this.position.y, x - this.position.x);
     const rotation = angle;
 
     // TODO: rotate in the correct direction
     gsap.to(this, {
-      rotation,
-      duration: 0.3,
+      rotation: rotation,
+      duration: 0.1,
+      ease: "power1.out",
     });
   }
 

@@ -1,23 +1,40 @@
 <script>
   import Game from "./Game.svelte";
+  import LevelSelect from "./LevelSelect.svelte";
+  import { slide } from "svelte/transition";
 
-  let started = true;
+  const STATES = {
+    MENU: "menu",
+    LEVEL_SELECT: "level_select",
+    GAME: "game",
+  };
+
+  let state = STATES.GAME;
+
+  function start(level) {
+    state = STATES.GAME;
+  }
 </script>
 
 <main>
   <div class="container">
     <div class="background" />
-    {#if started}
-      <Game />
-    {/if}
-    {#if !started}
-      <div class="menu">
+    {#if state === STATES.MENU}
+      <div class="menu" in:slide={{ duration: 300 }}>
         <h1>stealth<br /><span>stealth</span></h1>
         <div class="buttons">
-          <button on:click={() => (started = true)}>play</button>
+          <button on:click={() => (state = STATES.LEVEL_SELECT)}>play</button>
           <button>sound</button>
           <button>help</button>
         </div>
+      </div>
+    {:else if state === STATES.LEVEL_SELECT}
+      <div in:slide={{ duration: 300 }}>
+        <LevelSelect {start} />
+      </div>
+    {:else if state === STATES.GAME}
+      <div in:slide={{ duration: 300 }}>
+        <Game />
       </div>
     {/if}
   </div>
@@ -30,10 +47,17 @@
     color: white;
     font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
     font-style: italic;
+    user-select: none;
   }
 
   :global(body) {
     overflow: hidden;
+  }
+
+  :global(h1) {
+    text-shadow: 5px 0 #000, -5px 0 #000, 0 5px #000, 0 -5px #000, 1px 1px #000, -1px -1px #000,
+      1px -1px #000, -1px 1px #000;
+    font-size: 4em;
   }
 
   .container {
@@ -97,10 +121,6 @@
   }
 
   h1 {
-    text-shadow: 5px 0 #000, -5px 0 #000, 0 5px #000, 0 -5px #000, 1px 1px #000, -1px -1px #000,
-      1px -1px #000, -1px 1px #000;
-    font-size: 4em;
-
     animation: transitionIn 1s ease;
   }
 
@@ -116,6 +136,12 @@
     left: 0;
     z-index: -1;
     display: flex;
-    background: repeating-linear-gradient(-45deg, #9c7bd5, #9c7bd5 70px, #6438b0 70px, #6438b0 140px);
+    background: repeating-linear-gradient(
+      -45deg,
+      #9c7bd5,
+      #9c7bd5 70px,
+      #6438b0 70px,
+      #6438b0 140px
+    );
   }
 </style>

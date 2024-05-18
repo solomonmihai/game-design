@@ -30,7 +30,7 @@ async function initApp(canvas) {
 
   const scene = new Scene();
 
-  scene.scale.set(0.5, 0.5);
+  // scene.scale.set(0.5, 0.5);
 
   const bgGraphics = new Graphics();
   bgGraphics.rect(0, 0, app.canvas.width, app.canvas.height);
