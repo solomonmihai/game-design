@@ -15,10 +15,8 @@ easystar.enableDiagonals();
  * @param {Graphics} graphics
  * @returns {number[][]} grid
  */
-export function convertBlocksToGrid(blocks, cellSize, graphics) {
+function convertBlocksToGrid(blocks, bounds, cellSize, graphics) {
   const grid = [];
-
-  const bounds = blocks.getBounds();
 
   graphics.rect(bounds.minX, bounds.minY, bounds.width, bounds.height);
   graphics.stroke(0xffffff);
@@ -65,7 +63,7 @@ function transpose(matrix) {
  * @param {number} cellSize
  * @returns {Point}
  */
-export function worldToGrid(point, bounds, cellSize) {
+function worldToGrid(point, bounds, cellSize) {
   const x = Math.floor((-bounds.minX + point.x) / cellSize);
   const y = Math.floor((-bounds.minY + point.y) / cellSize);
 
@@ -91,7 +89,7 @@ export function gridToWorld(point, bounds, cellSize) {
  * @param {Point} to
  *
  */
-export async function findPath(grid, from, to) {
+async function findPath(grid, from, to) {
   easystar.setGrid(transpose(grid));
   return new Promise((resolve, reject) => {
     easystar.findPath(from.x, from.y, to.x, to.y, (path) => {
@@ -107,22 +105,22 @@ export async function findPath(grid, from, to) {
   });
 }
 
-export class Pathfinding {
+export default class Pathfinding {
   /**
    * @param {Container} blocks
+   * @param {Bounds} bounds
    * @param {number} cellSize
    * @param {Graphics} graphics
    */
-  constructor(blocks, cellSize, graphics) {
+  constructor(blocks, bounds, cellSize, graphics) {
     this._blocks = blocks;
     this._cellSize = cellSize;
     this._graphics = graphics;
 
-    this._bounds = blocks.getBounds();
+    this._bounds = bounds;
 
     /** @type {number[][]} */
-    this._grid = convertBlocksToGrid(blocks, cellSize, graphics);
-    console.log("grid", this._grid);
+    this._grid = convertBlocksToGrid(blocks, bounds, cellSize, graphics);
   }
 
   get grid() {
@@ -139,8 +137,6 @@ export class Pathfinding {
     const toCoords = worldToGrid(to, this._bounds, this._cellSize);
 
     const path = await findPath(this._grid, fromCoords, toCoords);
-
-    console.log("on player: ", this._grid[toCoords.x][toCoords.y]);
 
     if (!path) {
       console.log("couldnt find path");

@@ -1,7 +1,6 @@
 import { Bounds, Container, Graphics, Point } from "pixi.js";
 import gsap from "gsap";
 
-import { app } from "../App";
 import { isKeyDown } from "../Input";
 import { normalizePoint, aabbCollision } from "../utils";
 
