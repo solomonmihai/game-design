@@ -20,7 +20,7 @@ export default class Scene extends Container {
     super();
 
     this._debugGraphics = new Graphics();
-    this._debugGraphics.visible = false;
+    // this._debugGraphics.visible = true;
     this.addChild(this._debugGraphics);
 
     this._blocks = new Container();
@@ -83,7 +83,8 @@ export default class Scene extends Container {
     );
 
     this._agents = level.agents.map(({ path }) => {
-      return new Agent(path);
+      const pos = gridToWorld(path[0], this._bounds, CELL_SIZE);
+      return new Agent(path, pos);
     });
 
     this.addChild(this._player, this._goal, this._end, this._blocks, ...this._agents);
