@@ -5,7 +5,7 @@ import { isKeyDown } from "../Input";
 import { normalizePoint, aabbCollision } from "../utils";
 
 export default class Player extends Container {
-  constructor(spawnPoint) {
+  constructor(spawnPoint, activateEndPoint) {
     super();
 
     this._playerGraphics = this._createGraphics();
@@ -15,6 +15,7 @@ export default class Player extends Container {
     this.pivot.set(0.5, 0.5);
 
     this._speed = 5;
+    this._activateEndPoint = activateEndPoint;
 
     gsap.from(this.scale, {
       x: 10,
@@ -50,6 +51,7 @@ export default class Player extends Container {
       this._playerGraphics.circle(0, 0, 10);
       this._playerGraphics.fill(0x00ffff);
       this.parent.removeChild(target);
+      this._activateEndPoint();
     }
 
     this.position.x += velocity.x;

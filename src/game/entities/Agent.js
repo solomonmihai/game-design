@@ -42,6 +42,8 @@ export default class Agent extends Container {
 
     if (distanceToPlayer <= this._viewAreaRadius) {
       this._state = STATES.CHASE;
+    } else {
+      this._state = STATES.PATROL;
     }
 
     switch (this._state) {

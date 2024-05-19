@@ -16,7 +16,7 @@ import { Bounds } from "pixi.js";
 export const CELL_SIZE = 40;
 
 export default class Scene extends Container {
-  constructor(level) {
+  constructor(level, nextLevel) {
     super();
 
     this._debugGraphics = new Graphics();
@@ -29,8 +29,10 @@ export default class Scene extends Container {
     this._player = null;
     this._end = null;
     this._goal = null;
+    this._nextLevel = nextLevel;
+    this._isEndActive = false;
 
-    this._loadLevel(levels[0]);
+    this._loadLevel(levels[level]);
 
     this._pathfinding = new Pathfinding(this._blocks, this._bounds, CELL_SIZE, this._debugGraphics);
 
@@ -52,41 +54,48 @@ export default class Scene extends Container {
       this.pivot.x = lerp(this.pivot.x, playerX - app.canvas.width / 2, 0.05);
       this.pivot.y = lerp(this.pivot.y, playerY - app.canvas.height / 2, 0.05);
 
-      // if (aabbCollision(this._player.getBounds(), this._end.getBounds())) {
-      // console.log("Game finished");
-      // }
+      if (this._isEndActive && aabbCollision(this._player.getBounds(), this._end.getBounds())) {
+        console.log("Game finished");
+        this._nextLevel();
+      }
     });
   }
 
   _loadLevel(level) {
-    const { bounds } = level;
+    const { bounds, blocks, agents, start, end, goal } = level;
     const bminx = bounds.x * CELL_SIZE;
     const bminy = bounds.y * CELL_SIZE;
     const bmaxx = bminx + bounds.width * CELL_SIZE;
     const bmaxy = bminy + bounds.height * CELL_SIZE;
     this._bounds = new Bounds(bminx, bminy, bmaxx, bmaxy);
 
-    const playerPos = gridToWorld(level.start, this._bounds, CELL_SIZE);
-    this._player = new Player(playerPos);
+    const playerPos = gridToWorld(start, this._bounds, CELL_SIZE);
+    this._player = new Player(playerPos, this.activateEndPoint.bind(this));
 
-    const goalPos = gridToWorld(level.goal, this._bounds, CELL_SIZE);
+    const goalPos = gridToWorld(goal, this._bounds, CELL_SIZE);
     this._goal = new TargetPoint(goalPos.x, goalPos.y);
 
-    const endPos = gridToWorld(level.end, this._bounds, CELL_SIZE);
+    const endPos = gridToWorld(end, this._bounds, CELL_SIZE);
     this._end = new FinalPoint(endPos.x, endPos.y);
+    this._end.visible = false;
 
     this._blocks.addChild(
-      ...level.blocks.map(({ pos, width, height }) => {
+      ...blocks.map(({ pos, width, height }) => {
         const blockPos = gridToWorld(pos, this._bounds, CELL_SIZE);
         return new Block(blockPos, new Point(width * CELL_SIZE, height * CELL_SIZE));
       })
     );
 
-    this._agents = level.agents.map(({ path }) => {
+    this._agents = agents.map(({ path }) => {
       const pos = gridToWorld(path[0], this._bounds, CELL_SIZE);
       return new Agent(path, pos);
     });
 
     this.addChild(this._player, this._goal, this._end, this._blocks, ...this._agents);
+  }
+
+  activateEndPoint() {
+    this._isEndActive = true;
+    this._end.visible = true;
   }
 }
