@@ -3,7 +3,7 @@ import gsap from "gsap";
 
 import { dist, normalizePoint } from "../utils";
 import Player from "./Player";
-import Pathfinding, { gridToWorld } from "../pathfinding";
+import Pathfinding from "../pathfinding";
 
 const STATES = {
   PATROL: "patrol",
@@ -14,11 +14,11 @@ export default class Agent extends Container {
   /**
    * @param {Point[]} path
    */
-  constructor(path) {
+  constructor(path, pos) {
     super();
 
-    this.position.set(100, 100);
     this._path = path;
+    this.position.copyFrom(pos);
 
     this._viewAreaRadius = 100;
     this._viewAreaAngle = Math.PI / 3;
@@ -30,10 +30,6 @@ export default class Agent extends Container {
 
     this._graphics = this._createGraphics();
     this.addChild(this._graphics);
-
-    const firstPoint = this._path[this._currentPointIndex];
-    this.position.set(firstPoint.x, firstPoint.y);
-    this.pivot.set(0.5, 0.5);
   }
 
   /**
@@ -67,8 +63,14 @@ export default class Agent extends Container {
   async _patrol(dt, pathfinding) {
     const nextIndex = this._getNextPointIndex();
     const nextPoint = this._path[nextIndex];
+    const nextPointCoords = pathfinding.worldPos(nextPoint);
 
-    const [_, target] = await pathfinding.findPath(this.position, pathfinding.worldPos(nextPoint));
+    if (dist(this.position, nextPointCoords) < 10) {
+      this._currentPointIndex = nextIndex;
+      return this._patrol(dt, pathfinding);
+    }
+
+    const [_, target] = await pathfinding.findPath(this.position, nextPointCoords);
 
     if (!target) {
       return;
