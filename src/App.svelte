@@ -9,10 +9,14 @@
     GAME: "game",
   };
 
-  let state = STATES.GAME;
+  let state = STATES.MENU;
+  let selectedLevel = 0
+  let startTime;
 
   function start(level) {
+    selectedLevel = level;
     state = STATES.GAME;
+    startTime = Date.now();
   }
 </script>
 
@@ -34,7 +38,7 @@
       </div>
     {:else if state === STATES.GAME}
       <div in:slide={{ duration: 300 }}>
-        <Game />
+        <Game {startTime} {selectedLevel}/>
       </div>
     {/if}
   </div>

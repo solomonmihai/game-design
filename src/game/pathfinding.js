@@ -5,8 +5,8 @@ import { aabbCollision } from "./utils";
 
 const easystar = new Easystar();
 easystar.setAcceptableTiles([0]);
-easystar.enableDiagonals();
-// easystar.enableCornerCutting();
+// easystar.enableDiagonals();
+easystar.enableCornerCutting();
 
 /**
  *
