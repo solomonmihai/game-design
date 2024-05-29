@@ -26,7 +26,6 @@
   }
 
   function goToLevelSelect() {
-    selectedLevel += 1;
     state = STATES.LEVEL_SELECT;
   }
 </script>
