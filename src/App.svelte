@@ -8,6 +8,7 @@
     LEVEL_SELECT: "level_select",
     GAME: "game",
     CONGRATS: "congrats",
+    LOST: "lost",
   };
 
   let state = STATES.MENU;
@@ -20,13 +21,13 @@
     startTime = Date.now();
   }
 
-  function nextLevel() {
-    state = STATES.CONGRATS;
+  function finish(win = true) {
+    state = win ? STATES.CONGRATS : STATES.LOST;
   }
 
-  function transitionToNextLevel() {
+  function goToLevelSelect() {
     selectedLevel += 1;
-    state = STATES.GAME;
+    state = STATES.LEVEL_SELECT;
   }
 </script>
 
@@ -48,13 +49,13 @@
       </div>
     {:else if state === STATES.GAME}
       <div in:slide={{ duration: 300 }}>
-        <Game {startTime} {selectedLevel} {nextLevel} />
+        <Game {startTime} {selectedLevel} {finish} />
       </div>
-    {:else if state === STATES.CONGRATS}
+    {:else if state === STATES.CONGRATS || STATES.LOST}
       <div class="congrats">
-        <h1>Congratulations</h1>
+        <h1>{state === STATES.CONGRATS ? "Congratulations!!" : "You lost ..."}</h1>
         <p>time: {window.elapsedTime} seconds</p>
-        <button on:click={transitionToNextLevel}>next level</button>
+        <button on:click={goToLevelSelect}>level select</button>
       </div>
     {/if}
   </div>
@@ -175,7 +176,7 @@
     border: 4px solid white;
     padding: 40px;
     border-radius: 20px;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.5);
   }
 
   .congrats > p {

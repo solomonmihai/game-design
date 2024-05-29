@@ -1,4 +1,5 @@
-import { Container, Graphics, Point } from "pixi.js";
+import { Bounds, Container, Graphics, Point } from "pixi.js";
+import gsap from "gsap";
 
 import { app } from "./App";
 import { aabbCollision, lerp } from "./utils";
@@ -10,20 +11,21 @@ import Agent from "./entities/Agent";
 import FinalPoint from "./entities/FinalPoint";
 import TargetPoint from "./entities/TargetPoint";
 import levels from "./levels";
-import { Bounds } from "pixi.js";
 
 export const CELL_SIZE = 40;
 
 export default class Scene extends Container {
-  constructor(level, nextLevel) {
+  constructor(level, finish) {
     super();
 
     this._debugGraphics = new Graphics();
     this._debugGraphics.visible = false;
     this.addChild(this._debugGraphics);
 
-    this._boundsGraphics = new Graphics();
-    this.addChild(this._boundsGraphics);
+    this._graphics = new Graphics();
+    this._graphics.zIndex = 100;
+    this.sortableChildren = true;
+    this.addChild(this._graphics);
 
     window.addEventListener("keydown", (evt) => {
       if (evt.key === "p") {
@@ -33,22 +35,28 @@ export default class Scene extends Container {
 
     this._blocks = new Container();
     this._bounds = new Bounds();
+    /** @type {Agent[]}*/
     this._agents = [];
     this._player = null;
     this._end = null;
     this._goal = null;
-    this._nextLevel = nextLevel;
+    this._finish = finish;
     this._isEndActive = false;
 
     this._loadLevel(levels[level]);
 
+    this.sortChildren();
+
     this._pathfinding = new Pathfinding(this._blocks, this._bounds, CELL_SIZE, this._debugGraphics);
 
-    setInterval(() => {
-      this._agents.forEach((agent) => {
-        agent.move(0, this._player, this._pathfinding);
-      });
-    }, 500);
+    this._intervalId = null;
+
+    this._startAgents(500);
+    this._addLoseEvent();
+
+    this._triggered = false;
+    this._alphaTimeline = null;
+    this._redAlpha = 0.1;
 
     this._addTicker();
   }
@@ -62,6 +70,71 @@ export default class Scene extends Container {
     this._end.visible = true;
   }
 
+  _addLoseEvent() {
+    this._agents.forEach((a) => {
+      a.addEventListener(Agent.events.CAUGHT, async () => {
+        if (this._lost) {
+          return;
+        }
+
+        this._lost = true;
+        this._alphaTimeline.kill();
+
+        await gsap.to(this, {
+          _redAlpha: 1,
+          duration: 2,
+          onUpdate: () => this._drawAlpha(),
+        });
+
+        this._finish(false);
+      });
+    });
+  }
+
+  /**
+   * @param {number} interval
+   */
+  _startAgents(interval) {
+    clearInterval(this._intervalId);
+    this._intervalId = setInterval(() => {
+      this._agents.forEach((agent) => {
+        agent.move(0, this._player, this._pathfinding);
+      });
+    }, interval);
+  }
+
+  triggerAgents() {
+    if (this._triggered) {
+      return;
+    }
+
+    this._isEndActive = false;
+    this._triggered = true;
+
+    this._alphaTimeline = gsap.timeline({ yoyo: true, repeat: -1 }).to(this, {
+      _redAlpha: 0.3,
+      duration: 0.5,
+      onUpdate: () => this._drawAlpha(),
+    });
+
+    this._startAgents(50);
+    this._agents.forEach((agent) => agent.trigger());
+  }
+
+  _drawAlpha() {
+    this._graphics.clear();
+    this._drawBounds();
+
+    this._graphics.beginFill(0xff0000, this._redAlpha);
+    this._graphics.rect(
+      this._bounds.x - 400,
+      this._bounds.y - 400,
+      this._bounds.width + 800,
+      this.bounds.height + 800
+    );
+    this._graphics.endFill();
+  }
+
   _addTicker() {
     app.ticker.add(({ deltaTime }) => {
       this._player.move(deltaTime, this._blocks, this._goal);
@@ -72,8 +145,10 @@ export default class Scene extends Container {
       this.pivot.y = lerp(this.pivot.y, playerY - app.canvas.height / 2, 0.05);
 
       if (this._isEndActive && aabbCollision(this._player.getBounds(), this._end.getBounds())) {
-        this._nextLevel();
+        this._finish();
       }
+
+      this._agents.forEach((a) => a.checkState(this._player));
     });
   }
 
@@ -106,7 +181,7 @@ export default class Scene extends Container {
 
     this._agents = agents.map(({ path }) => {
       const pos = gridToWorld(path[0], this._bounds, CELL_SIZE);
-      return new Agent(path, pos);
+      return new Agent(this, path, pos);
     });
 
     this.addChild(this._player, this._goal, this._end, this._blocks, ...this._agents);
@@ -115,30 +190,30 @@ export default class Scene extends Container {
   }
 
   _drawBounds() {
-    this._boundsGraphics.clear();
+    this._graphics.clear();
 
     const size = 400;
 
-    this._boundsGraphics.rect(this._bounds.x, this._bounds.y - size, this._bounds.width, size);
-    this._boundsGraphics.rect(
+    this._graphics.rect(this._bounds.x, this._bounds.y - size, this._bounds.width, size);
+    this._graphics.rect(
       this._bounds.x,
       this._bounds.y + this._bounds.height,
       this._bounds.width,
       size
     );
-    this._boundsGraphics.rect(
+    this._graphics.rect(
       this._bounds.x - size,
       this._bounds.y - size,
       size,
       this._bounds.height + size * 2
     );
-    this._boundsGraphics.rect(
+    this._graphics.rect(
       this._bounds.x + this.bounds.width,
       this._bounds.y - size,
       size,
       this._bounds.height + size * 2
     );
 
-    this._boundsGraphics.fill(0x460eac);
+    this._graphics.fill(0x460eac);
   }
 }

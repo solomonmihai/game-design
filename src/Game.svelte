@@ -5,14 +5,14 @@
 
   export let startTime;
   export let selectedLevel;
-  export let nextLevel;
+  export let finish;
 
   let canvas;
   let elapsedTime = 0;
   let interval;
 
   onMount(async () => {
-    initApp(canvas, selectedLevel, nextLevel);
+    initApp(canvas, selectedLevel, finish);
     interval = setInterval(() => {
       elapsedTime = Math.floor((Date.now() - startTime) / 1000);
 

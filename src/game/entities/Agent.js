@@ -4,24 +4,33 @@ import gsap from "gsap";
 import { dist, normalizePoint } from "../utils";
 import Player from "./Player";
 import Pathfinding from "../pathfinding";
+import Scene from "../Scene";
 
 const STATES = {
   PATROL: "patrol",
   CHASE: "chase",
 };
 
+const EVENTS = {
+  CAUGHT: "caught",
+};
+
 export default class Agent extends Container {
   /**
+   * @param {Scene} scene
    * @param {Point[]} path
+   * @param {Point} pos
    */
-  constructor(path, pos) {
+  constructor(scene, path, pos) {
     super();
+
+    this._scene = scene;
 
     this._path = path;
     this.position.copyFrom(pos);
 
-    this._viewAreaRadius = 100;
-    this._viewAreaAngle = Math.PI / 3;
+    this._viewAreaRadius = 120;
+    this._viewAreaAngle = Math.PI * 0.4;
     this._speed = 2.5;
 
     this._currentPointIndex = 0;
@@ -32,44 +41,53 @@ export default class Agent extends Container {
     this.addChild(this._graphics);
   }
 
+  static get events() {
+    return EVENTS;
+  }
+
   /**
    * @param {Number} dt
    * @param {Player} player
    * @param {Pathfinding} pathfinding
    */
   async move(dt, player, pathfinding) {
-    const distanceToPlayer = dist(this.position, player.position);
-
-    if (distanceToPlayer <= this._viewAreaRadius) {
-      this._state = STATES.CHASE;
-    } else {
-      this._state = STATES.PATROL;
-    }
-
     switch (this._state) {
       case STATES.PATROL: {
-        await this._patrol(dt, pathfinding);
+        await this._patrol(pathfinding);
         break;
       }
       case STATES.CHASE: {
-        this._chase(dt, player, pathfinding);
+        this._chase(player, pathfinding);
         break;
       }
     }
   }
 
   /**
+   * @param {Player} player
+   */
+  checkState(player) {
+    if (this._state === STATES.PATROL && this._isPlayerInViewCone(player)) {
+      this._scene.triggerAgents();
+    }
+  }
+
+  trigger() {
+    this._state = STATES.CHASE;
+  }
+
+  /**
    * @param {number} dt
    * @param {Pathfinding} pathfinding
    */
-  async _patrol(dt, pathfinding) {
+  async _patrol(pathfinding) {
     const nextIndex = this._getNextPointIndex();
     const nextPoint = this._path[nextIndex];
     const nextPointCoords = pathfinding.worldPos(nextPoint);
 
     if (dist(this.position, nextPointCoords) < 10) {
       this._currentPointIndex = nextIndex;
-      return this._patrol(dt, pathfinding);
+      return this._patrol(pathfinding);
     }
 
     const [_, target] = await pathfinding.findPath(this.position, nextPointCoords);
@@ -88,15 +106,21 @@ export default class Agent extends Container {
   }
 
   /**
-   * @param {number} dt
    * @param {Player} player
    * @param {Pathfinding} pathfinding
    */
-  async _chase(dt, player, pathfinding) {
-    const [_, target] = await pathfinding.findPath(this.position, player.position);
+  async _chase(player, pathfinding) {
+    try {
+      const [_, target] = await pathfinding.findPath(this.position, player.position);
 
-    this._moveToTarget(target);
-    this._rotateToTarget(target);
+      this._moveToTarget(target);
+      this._rotateToTarget(target);
+    } catch (err) {}
+
+    if (dist(this.position, player.position) < 10) {
+      console.log("emit");
+      this.emit(EVENTS.CAUGHT);
+    }
   }
 
   /**
@@ -114,7 +138,7 @@ export default class Agent extends Container {
     gsap.to(this.position, {
       x: target.x,
       y: target.y,
-      duration: 0.5,
+      duration: this._state === STATES.CHASE ? 0.15 : 0.5,
       ease: "linear",
     });
   }
@@ -150,5 +174,24 @@ export default class Agent extends Container {
     graphics.fill(0x222222);
 
     return graphics;
+  }
+
+  /**
+   * Check if the player is within the view cone of the agent
+   * @param {Player} player
+   * @returns {boolean}
+   */
+  _isPlayerInViewCone(player) {
+    const distToPlayer = dist(this.position, player.position);
+    if (distToPlayer > this._viewAreaRadius) {
+      return false;
+    }
+
+    const angle = Math.atan2(player.y - this.y, player.x - this.x);
+
+    return (
+      this.rotation - this._viewAreaAngle / 2 < angle &&
+      this.rotation + this._viewAreaAngle / 2 > angle
+    );
   }
 }

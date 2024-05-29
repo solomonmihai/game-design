@@ -13,9 +13,9 @@ let app;
  *
  * @param {HTMLCanvasElement} canvas
  * @param {number} selectedLevel
- * @param {function} nextLevel
+ * @param {function} finish
  */
-async function initApp(canvas, selectedLevel, nextLevel) {
+async function initApp(canvas, selectedLevel, finish) {
   app = new Application();
 
   await app.init({
@@ -30,7 +30,7 @@ async function initApp(canvas, selectedLevel, nextLevel) {
     vignetting: 0.5,
   });
 
-  const scene = new Scene(selectedLevel, nextLevel);
+  const scene = new Scene(selectedLevel, finish);
 
   //scene.scale.set(0.5, 0.5);
 
