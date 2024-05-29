@@ -20,8 +20,14 @@ export default class Scene extends Container {
     super();
 
     this._debugGraphics = new Graphics();
-    // this._debugGraphics.visible = true;
+    this._debugGraphics.visible = false;
     this.addChild(this._debugGraphics);
+
+    window.addEventListener("keydown", (evt) => {
+      if (evt.key === "p") {
+        this._debugGraphics.visible = !this._debugGraphics.visible;
+      }
+    });
 
     this._blocks = new Container();
     this._bounds = new Bounds();
