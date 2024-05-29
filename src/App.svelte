@@ -7,16 +7,26 @@
     MENU: "menu",
     LEVEL_SELECT: "level_select",
     GAME: "game",
+    CONGRATS: "congrats",
   };
 
   let state = STATES.MENU;
-  let selectedLevel = 0
+  let selectedLevel = 0;
   let startTime;
 
   function start(level) {
     selectedLevel = level;
     state = STATES.GAME;
     startTime = Date.now();
+  }
+
+  function nextLevel() {
+    state = STATES.CONGRATS;
+  }
+
+  function transitionToNextLevel() {
+    selectedLevel += 1;
+    state = STATES.GAME;
   }
 </script>
 
@@ -38,7 +48,13 @@
       </div>
     {:else if state === STATES.GAME}
       <div in:slide={{ duration: 300 }}>
-        <Game {startTime} {selectedLevel}/>
+        <Game {startTime} {selectedLevel} {nextLevel} />
+      </div>
+    {:else if state === STATES.CONGRATS}
+      <div class="congrats">
+        <h1>Congratulations</h1>
+        <p>time: {window.elapsedTime} seconds</p>
+        <button on:click={transitionToNextLevel}>next level</button>
       </div>
     {/if}
   </div>
@@ -147,5 +163,22 @@
       #6438b0 70px,
       #6438b0 140px
     );
+  }
+
+  .congrats {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+
+    border: 4px solid white;
+    padding: 40px;
+    border-radius: 20px;
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+
+  .congrats > p {
+    font-size: 30px;
   }
 </style>

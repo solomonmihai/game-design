@@ -1,7 +1,7 @@
 import { Container, Graphics, Point } from "pixi.js";
 
 import { app } from "./App";
-import { lerp, rand } from "./utils";
+import { aabbCollision, lerp } from "./utils";
 import Pathfinding, { gridToWorld } from "./pathfinding";
 
 import Block from "./entities/Block";
@@ -21,6 +21,9 @@ export default class Scene extends Container {
     this._debugGraphics = new Graphics();
     this._debugGraphics.visible = false;
     this.addChild(this._debugGraphics);
+
+    this._boundsGraphics = new Graphics();
+    this.addChild(this._boundsGraphics);
 
     window.addEventListener("keydown", (evt) => {
       if (evt.key === "p") {
@@ -54,6 +57,11 @@ export default class Scene extends Container {
     return this._bounds;
   }
 
+  activateEndPoint() {
+    this._isEndActive = true;
+    this._end.visible = true;
+  }
+
   _addTicker() {
     app.ticker.add(({ deltaTime }) => {
       this._player.move(deltaTime, this._blocks, this._goal);
@@ -64,7 +72,6 @@ export default class Scene extends Container {
       this.pivot.y = lerp(this.pivot.y, playerY - app.canvas.height / 2, 0.05);
 
       if (this._isEndActive && aabbCollision(this._player.getBounds(), this._end.getBounds())) {
-        console.log("Game finished");
         this._nextLevel();
       }
     });
@@ -79,7 +86,7 @@ export default class Scene extends Container {
     this._bounds = new Bounds(bminx, bminy, bmaxx, bmaxy);
 
     const playerPos = gridToWorld(start, this._bounds, CELL_SIZE);
-    this._player = new Player(playerPos, this.activateEndPoint.bind(this));
+    this._player = new Player(this, playerPos, this.activateEndPoint.bind(this));
 
     const goalPos = gridToWorld(goal, this._bounds, CELL_SIZE);
     this._goal = new TargetPoint(goalPos.x, goalPos.y);
@@ -103,10 +110,35 @@ export default class Scene extends Container {
     });
 
     this.addChild(this._player, this._goal, this._end, this._blocks, ...this._agents);
+
+    this._drawBounds();
   }
 
-  activateEndPoint() {
-    this._isEndActive = true;
-    this._end.visible = true;
+  _drawBounds() {
+    this._boundsGraphics.clear();
+
+    const size = 400;
+
+    this._boundsGraphics.rect(this._bounds.x, this._bounds.y - size, this._bounds.width, size);
+    this._boundsGraphics.rect(
+      this._bounds.x,
+      this._bounds.y + this._bounds.height,
+      this._bounds.width,
+      size
+    );
+    this._boundsGraphics.rect(
+      this._bounds.x - size,
+      this._bounds.y - size,
+      size,
+      this._bounds.height + size * 2
+    );
+    this._boundsGraphics.rect(
+      this._bounds.x + this.bounds.width,
+      this._bounds.y - size,
+      size,
+      this._bounds.height + size * 2
+    );
+
+    this._boundsGraphics.fill(0x460eac);
   }
 }

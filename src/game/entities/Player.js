@@ -6,7 +6,12 @@ import { normalizePoint, aabbCollision } from "../utils";
 import Scene from "../Scene";
 
 export default class Player extends Container {
-  constructor(spawnPoint, activateEndPoint) {
+  /**
+   * @param {Scene} scene
+   * @param {Point} spawnPoint
+   * @param {any} activateEndPoint
+   */
+  constructor(scene, spawnPoint, activateEndPoint) {
     super();
 
     this._scene = scene;
