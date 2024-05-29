@@ -3,10 +3,13 @@ import gsap from "gsap";
 
 import { isKeyDown } from "../Input";
 import { normalizePoint, aabbCollision } from "../utils";
+import Scene from "../Scene";
 
 export default class Player extends Container {
   constructor(spawnPoint, activateEndPoint) {
     super();
+
+    this._scene = scene;
 
     this._playerGraphics = this._createGraphics();
     this.addChild(this._playerGraphics);
@@ -40,13 +43,20 @@ export default class Player extends Container {
 
     const normalizedDir = normalizePoint(dir);
 
-    const velocity = new Point(this._speed * dt * normalizedDir.x, this._speed * dt * normalizedDir.y);
+    const velocity = new Point(
+      this._speed * dt * normalizedDir.x,
+      this._speed * dt * normalizedDir.y
+    );
+
+    if (this._checkBounds()) {
+      return;
+    }
 
     if (this._checkCollisions(blocks, velocity)) {
       return;
     }
 
-    if (this._checkCollisionWithTarget(target, velocity)){
+    if (this._checkCollisionWithTarget(target, velocity)) {
       this._playerGraphics.clear();
       this._playerGraphics.circle(0, 0, 10);
       this._playerGraphics.fill(0x00ffff);
@@ -64,8 +74,6 @@ export default class Player extends Container {
    * @returns {boolean}
    */
   _checkCollisions(blocks, velocity) {
-    // TODO: convert this so it returns the new appropriate position instead of not moving at all
-
     const bounds = this.getBounds();
     const newBounds = new Bounds(
       bounds.minX + velocity.x,
@@ -83,13 +91,36 @@ export default class Player extends Container {
     return false;
   }
 
+  _checkBounds() {
+    if (this.position.x + 5 > this._scene.bounds.maxX) {
+      this.position.x = this._scene.bounds.maxX - 5;
+      return true;
+    }
+
+    if (this.position.x - 5 < this._scene.bounds.minX) {
+      this.position.x = this._scene.bounds.minX + 5;
+      return true;
+    }
+
+    if (this.position.y + 5 > this._scene.bounds.maxY) {
+      this.position.y = this._scene.bounds.maxY - 5;
+      return true;
+    }
+
+    if (this.position.y - 5 < this._scene.bounds.minY) {
+      this.position.y = this._scene.bounds.minY + 5;
+      return true;
+    }
+
+    return false;
+  }
+
   /**
    * @param {Container} target
    * @param {Point} velocity
    * @returns {boolean}
    */
   _checkCollisionWithTarget(target, velocity) {
-
     const bounds = this.getBounds();
     const newBounds = new Bounds(
       bounds.minX + velocity.x,
@@ -100,11 +131,11 @@ export default class Player extends Container {
 
     const targetBounds = target.getBounds();
 
-    if( aabbCollision(newBounds, targetBounds)) {
+    if (aabbCollision(newBounds, targetBounds)) {
       return true;
     }
 
-    return false
+    return false;
   }
 
   /**

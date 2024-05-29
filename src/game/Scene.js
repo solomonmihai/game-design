@@ -3,7 +3,6 @@ import { Container, Graphics, Point } from "pixi.js";
 import { app } from "./App";
 import { lerp, rand } from "./utils";
 import Pathfinding, { gridToWorld } from "./pathfinding";
-import { aabbCollision } from "./utils";
 
 import Block from "./entities/Block";
 import Player from "./entities/Player";
@@ -51,6 +50,10 @@ export default class Scene extends Container {
     this._addTicker();
   }
 
+  get bounds() {
+    return this._bounds;
+  }
+
   _addTicker() {
     app.ticker.add(({ deltaTime }) => {
       this._player.move(deltaTime, this._blocks, this._goal);
@@ -88,6 +91,8 @@ export default class Scene extends Container {
     this._blocks.addChild(
       ...blocks.map(({ pos, width, height }) => {
         const blockPos = gridToWorld(pos, this._bounds, CELL_SIZE);
+        blockPos.x -= CELL_SIZE / 2;
+        blockPos.y -= CELL_SIZE / 2;
         return new Block(blockPos, new Point(width * CELL_SIZE, height * CELL_SIZE));
       })
     );
