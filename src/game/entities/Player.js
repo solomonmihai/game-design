@@ -22,7 +22,7 @@ export default class Player extends Container {
     this.position.set(spawnPoint.x, spawnPoint.y);
     this.pivot.set(0.5, 0.5);
 
-    this._speed = 5;
+    this._speed = 3;
     this._activateEndPoint = activateEndPoint;
 
     gsap.from(this.scale, {

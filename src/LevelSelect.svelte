@@ -1,7 +1,7 @@
 <script>
   export let start;
 
-  const levels = [1, 2, 3, 4, 5];
+  const levels = [1, 2, 3];
 </script>
 
 <div class="container">

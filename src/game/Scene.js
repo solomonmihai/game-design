@@ -51,7 +51,7 @@ export default class Scene extends Container {
 
     this._intervalId = null;
 
-    this._startAgents(500);
+    this._startAgents(550);
     this._addLoseEvent();
 
     this._triggered = false;
